@@ -177,7 +177,7 @@ namespace WebSocketSharp
       _message = messages;
       _secure = context.IsSecureConnection;
       _stream = context.Stream;
-      _waitTime = TimeSpan.FromSeconds (1);
+      _waitTime = TimeSpan.FromSeconds (10);
 
       init ();
     }
@@ -193,7 +193,7 @@ namespace WebSocketSharp
       _message = messages;
       _secure = context.IsSecureConnection;
       _stream = context.Stream;
-      _waitTime = TimeSpan.FromSeconds (1);
+      _waitTime = TimeSpan.FromSeconds (10);
 
       init ();
     }
@@ -280,7 +280,7 @@ namespace WebSocketSharp
       _message = messagec;
       _retryCountForConnect = -1;
       _secure = _uri.Scheme == "wss";
-      _waitTime = TimeSpan.FromSeconds (5);
+      _waitTime = TimeSpan.FromSeconds (10);
 
       init ();
     }
