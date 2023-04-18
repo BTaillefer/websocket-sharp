@@ -470,6 +470,8 @@ namespace WebSocketSharp.Server
 
         _sessions.Add (id, session);
 
+        _log.Trace($"Adding new socket session with ID - {id}");
+
         return id;
       }
     }
@@ -477,7 +479,11 @@ namespace WebSocketSharp.Server
     internal bool Remove (string id)
     {
       lock (_sync)
-        return _sessions.Remove (id);
+      {
+        _log.Trace($"Removing socket session with ID - {id}");
+        return _sessions.Remove(id);
+      }
+        
     }
 
     internal void Start ()
