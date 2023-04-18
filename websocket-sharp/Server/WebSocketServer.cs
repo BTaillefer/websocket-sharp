@@ -824,6 +824,8 @@ namespace WebSocketSharp.Server
         try {
           cl = _listener.AcceptTcpClient ();
 
+          _log.Trace($"Accept connection request from - {(cl.Client.RemoteEndPoint as System.Net.IPEndPoint).Address}");
+
           ThreadPool.QueueUserWorkItem (
             state => {
               try {
@@ -874,6 +876,7 @@ namespace WebSocketSharp.Server
         }
       }
 
+      _log.Trace("Stopping receiveRequest() Thread");
       abort ();
     }
 

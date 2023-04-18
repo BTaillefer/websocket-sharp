@@ -81,9 +81,9 @@ namespace WebSocketSharp.Server
       _sessions = new Dictionary<string, IWebSocketSession> ();
       _state = ServerState.Ready;
       _sync = ((ICollection) _sessions).SyncRoot;
-      _waitTime = TimeSpan.FromSeconds (10);
+      _waitTime = TimeSpan.FromSeconds (5);
 
-      setSweepTimer (3000000);
+      setSweepTimer (180000);
     }
 
     #endregion
@@ -1548,6 +1548,10 @@ namespace WebSocketSharp.Server
         _sweeping = true;
       }
 
+      var connectedSessions = IDs.ToArray();
+      if(connectedSessions.Length > 0) 
+        _log.Trace($"Connected sessions: {string.Join(",", connectedSessions)}");
+
       foreach (var id in InactiveIDs) {
         if (_state != ServerState.Start)
           break;
@@ -1565,7 +1569,7 @@ namespace WebSocketSharp.Server
 
           if (state == WebSocketState.Open) {
             session.WebSocket.Close (CloseStatusCode.Abnormal);
-
+            _log.Trace($"Sweeping session: {session.ID}");
             continue;
           }
 
