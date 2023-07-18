@@ -79,6 +79,8 @@ namespace WebSocketSharp.Server
     private object                             _sync;
     private Func<IIdentity, NetworkCredential> _userCredFinder;
 
+    public static int                          _hostPort;
+
     #endregion
 
     #region Static Constructor
@@ -745,6 +747,10 @@ namespace WebSocketSharp.Server
       return realm != null && realm.Length > 0 ? realm : _defaultRealm;
     }
 
+    public static int getHostPort() { 
+        return _hostPort;
+    }
+
     private ServerSslConfiguration getSslConfiguration ()
     {
       if (_sslConfig == null)
@@ -768,6 +774,7 @@ namespace WebSocketSharp.Server
       _log = new Logger ();
       _services = new WebSocketServiceManager (_log);
       _sync = new object ();
+      _hostPort = port;
     }
 
     private void processRequest (TcpListenerWebSocketContext context)
