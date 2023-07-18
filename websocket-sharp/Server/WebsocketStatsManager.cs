@@ -10,12 +10,14 @@ namespace WebSocketSharp.Server
     {
 
         private HashSet<string> _uniqueConnections;
-        private DailyTimer _statsTimer;
-        private Logger _log;
+        private readonly DailyTimer _statsTimer;
+        private readonly Logger _log;
+        private readonly int _websocketPort;
 
-        public WebsocketStatsManager(Logger log)
+        public WebsocketStatsManager(Logger log, int websocketPort)
         {
             _log = log;
+            _websocketPort = websocketPort;
             _uniqueConnections = new HashSet<string>();
 
             //Indicates that the timer will elapse at 00:00:00 of the next day (Midnight)
@@ -30,10 +32,11 @@ namespace WebSocketSharp.Server
         {
             if (_uniqueConnections != null)
             {
-                _log.Trace($"Number of unique connections over the past 24 hours - {_uniqueConnections.Count}");
-                _log.Trace($"Unique IP's connected over the past 24 hours - {string.Join(",", _uniqueConnections.ToArray())}");
+                _log.Trace($"Number of unique connections on port {_websocketPort} over the past 24 hours - {_uniqueConnections.Count}");
+                _log.Trace($"Unique IP's connected on port {_websocketPort} over the past 24 hours - {string.Join(",", _uniqueConnections.ToArray())}");
+
+                _uniqueConnections.Clear();
             }
-            _uniqueConnections.Clear();
         }
 
         public void AddUniqueConnection(string ipAddress)

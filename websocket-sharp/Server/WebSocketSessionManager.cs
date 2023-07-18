@@ -34,8 +34,6 @@ using System.Linq;
 
 using System.Threading;
 
-using WebSocketSharp.Server;
-
 namespace WebSocketSharp.Server
 {
   /// <summary>
@@ -60,6 +58,7 @@ namespace WebSocketSharp.Server
     private object                                _sync;
     private TimeSpan                              _waitTime;
     private WebsocketStatsManager                 _statsManager;
+    private int                                   _websocketPort;
 
     #endregion
 
@@ -84,7 +83,9 @@ namespace WebSocketSharp.Server
       _state = ServerState.Ready;
       _sync = ((ICollection) _sessions).SyncRoot;
       _waitTime = TimeSpan.FromSeconds (5);
-      _statsManager = new WebsocketStatsManager(log);
+      _websocketPort = WebSocketServer.getHostPort();
+      _statsManager = new WebsocketStatsManager(log, _websocketPort);
+      
 
       setSweepTimer (180000);
     }
@@ -472,8 +473,7 @@ namespace WebSocketSharp.Server
         var id = createID ();
 
         _sessions.Add (id, session);
-
-         _log.Trace($"Adding new socket session for IP {ipAddress} -  {id}");
+        _log.Trace($"Adding new socket session on port {session?.WebSocket?.Url?.Port.ToString() ?? "N/A"} for IP {ipAddress} -  {id}");
         _statsManager.AddUniqueConnection(ipAddress);
 
         return id;
@@ -1558,7 +1558,7 @@ namespace WebSocketSharp.Server
         _sweeping = true;
       }
 
-      _log.Trace($"Number of connected sessions - {IDs.Count()}");
+      _log.Trace($"Number of connected sessions on port {_websocketPort} - {IDs.Count()}");
 
       foreach (var id in InactiveIDs) {
         if (_state != ServerState.Start)
