@@ -63,6 +63,7 @@ namespace WebSocketSharp.Net.WebSockets
     private IPrincipal          _user;
     private System.Net.EndPoint _userEndPoint;
     private WebSocket           _websocket;
+    private TimeSpan            _socketTimeout;
 
     #endregion
 
@@ -73,12 +74,14 @@ namespace WebSocketSharp.Net.WebSockets
       string protocol,
       bool secure,
       ServerSslConfiguration sslConfig,
-      Logger log
+      Logger log,
+      TimeSpan socketTimeout
     )
     {
       _tcpClient = tcpClient;
       _secure = secure;
       _log = log;
+      _socketTimeout = socketTimeout;
 
       var netStream = tcpClient.GetStream ();
 
@@ -427,6 +430,18 @@ namespace WebSocketSharp.Net.WebSockets
     public override WebSocket WebSocket {
       get {
         return _websocket;
+      }
+    }
+
+    /// <summary>
+    /// Gets the Websocket Timeout used for the underlying TCP Client Stream
+    /// for the websocket server.
+    /// </summary>
+    public TimeSpan SocketTimeout
+    {
+      get
+      {
+        return _socketTimeout;
       }
     }
 

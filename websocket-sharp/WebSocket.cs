@@ -177,7 +177,10 @@ namespace WebSocketSharp
       _message = messages;
       _secure = context.IsSecureConnection;
       _stream = context.Stream;
-      _waitTime = TimeSpan.FromSeconds (5);
+      _waitTime = TimeSpan.FromSeconds(1);
+
+      _stream.WriteTimeout = (int)TimeSpan.FromSeconds(5).TotalMilliseconds;
+      _stream.ReadTimeout = (int)TimeSpan.FromSeconds(5).TotalMilliseconds;
 
       init ();
     }
@@ -193,7 +196,11 @@ namespace WebSocketSharp
       _message = messages;
       _secure = context.IsSecureConnection;
       _stream = context.Stream;
-      _waitTime = TimeSpan.FromSeconds (5);
+
+      _waitTime = TimeSpan.FromSeconds (1);
+
+      _stream.WriteTimeout = (int)context.SocketTimeout.TotalMilliseconds;
+      _stream.ReadTimeout = (int)context.SocketTimeout.TotalMilliseconds;
 
       init ();
     }
@@ -280,7 +287,7 @@ namespace WebSocketSharp
       _message = messagec;
       _retryCountForConnect = -1;
       _secure = _uri.Scheme == "wss";
-      _waitTime = TimeSpan.FromSeconds (5);
+      _waitTime = TimeSpan.FromSeconds (1);
 
       init ();
     }
@@ -751,6 +758,14 @@ namespace WebSocketSharp
           _waitTime = value;
         }
       }
+    }
+
+    public string ClientIP
+    {
+        get
+        {
+            return _context?.UserEndPoint?.Address?.ToString() ?? "0.0.0.0";
+        }
     }
 
     #endregion
@@ -1757,10 +1772,11 @@ namespace WebSocketSharp
     {
       var pong = WebSocketFrame.CreatePongFrame (frame.PayloadData, _client);
 
+      _log.Trace($"Ping received from client with IP {ClientIP}");
+
       lock (_forState) {
         if (_readyState != WebSocketState.Open) {
-          _log.Trace ("A pong to this ping cannot be sent.");
-
+          _log.Trace($"A pong to this ping cannot be sent for IP {ClientIP}");
           return true;
         }
 
@@ -1780,12 +1796,14 @@ namespace WebSocketSharp
         enqueueToMessageEventQueue (e);
       }
 
+      _log.Trace($"Pong sent to client with IP {ClientIP} for above ping request.");
       return true;
     }
 
     private bool processPongFrame (WebSocketFrame frame)
     {
       try {
+        _log.Trace($"Process pong frame for IP {ClientIP}");
         _pongReceived.Set ();
       }
       catch (NullReferenceException) {
@@ -2125,8 +2143,9 @@ namespace WebSocketSharp
         _stream.Write (bytes, 0, bytes.Length);
       }
       catch (Exception ex) {
-        _log.Error (ex.Message);
-        _log.Debug (ex.ToString ());
+        _log.Trace($"Exception while attempting to send to {ClientIP}");
+        _log.Trace(ex.Message);
+        _log.Trace(ex.ToString ());
 
         return false;
       }
@@ -2558,13 +2577,22 @@ namespace WebSocketSharp
     // As server
     internal bool Ping (byte[] rawFrame)
     {
+      _log.Info($"Begin ping for {ClientIP}.");
       if (_readyState != WebSocketState.Open)
+      {
+        _log.Info($"Unable to Ping client with {ClientIP} due to socket not being opened.");
         return false;
+      }
 
       var received = _pongReceived;
 
       if (received == null)
+      {
+        _log.Info($"Reset event for received pong not set for {ClientIP}");
         return false;
+      }
+
+
 
       lock (_forPing) {
         try {
@@ -2573,7 +2601,12 @@ namespace WebSocketSharp
           var sent = send (rawFrame);
 
           if (!sent)
+          {
+            _log.Info($"Ping not sent - socket not available for {ClientIP}");
             return false;
+          }
+
+          _log.Info($"Sent ping for {ClientIP} - waiting for pong response.");
 
           return received.WaitOne (_waitTime);
         }
