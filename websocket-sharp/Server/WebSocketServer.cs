@@ -79,7 +79,11 @@ namespace WebSocketSharp.Server
     private object                             _sync;
     private Func<IIdentity, NetworkCredential> _userCredFinder;
 
+    //Default TCP socket timeout to 5 seconds instead of infinite
+    private TimeSpan                           _socketTCPTimeout = TimeSpan.FromSeconds(5);
+
     public static int                          _hostPort;
+
 
     #endregion
 
@@ -652,6 +656,32 @@ namespace WebSocketSharp.Server
     }
 
     /// <summary>
+    /// Gets or sets the Socket Timeout to be used for the underlying
+    /// TCP Client Stream for the server's access of the clients socket.
+    /// </summary>
+    /// <remarks>
+    /// Required to allow concurrent data flow during periods of connectivity
+    /// issues
+    /// </remarks>
+    /// <value>
+    ///   <para>
+    ///   A <see cref="TimeSpan"/> that represents the time to wait for
+    ///   the response.
+    ///   </para>
+    ///   <para>
+    ///   The default value is the same as 1 second.
+    ///   </para>
+    /// </value>
+    /// <exception cref="ArgumentOutOfRangeException">
+    /// The value specified for a set operation is zero or less.
+    /// </exception>
+    public TimeSpan SocketTCPTimeout
+    {
+        get => _socketTCPTimeout;
+        set => _socketTCPTimeout = value;
+    }
+
+    /// <summary>
     /// Gets the management function for the WebSocket services provided by
     /// the server.
     /// </summary>
@@ -836,7 +866,7 @@ namespace WebSocketSharp.Server
             state => {
               try {
                 var ctx = new TcpListenerWebSocketContext (
-                            cl, null, _secure, _sslConfigInUse, _log
+                            cl, null, _secure, _sslConfigInUse, _log, _socketTCPTimeout
                           );
 
                 processRequest (ctx);

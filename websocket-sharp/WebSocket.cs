@@ -177,7 +177,10 @@ namespace WebSocketSharp
       _message = messages;
       _secure = context.IsSecureConnection;
       _stream = context.Stream;
-      _waitTime = TimeSpan.FromSeconds (1);
+      _waitTime = TimeSpan.FromSeconds(1);
+
+      _stream.WriteTimeout = (int)TimeSpan.FromSeconds(5).TotalMilliseconds;
+      _stream.ReadTimeout = (int)TimeSpan.FromSeconds(5).TotalMilliseconds;
 
       init ();
     }
@@ -193,7 +196,11 @@ namespace WebSocketSharp
       _message = messages;
       _secure = context.IsSecureConnection;
       _stream = context.Stream;
+
       _waitTime = TimeSpan.FromSeconds (1);
+
+      _stream.WriteTimeout = (int)context.SocketTimeout.TotalMilliseconds;
+      _stream.ReadTimeout = (int)context.SocketTimeout.TotalMilliseconds;
 
       init ();
     }
@@ -2136,8 +2143,9 @@ namespace WebSocketSharp
         _stream.Write (bytes, 0, bytes.Length);
       }
       catch (Exception ex) {
-        _log.Error (ex.Message);
-        _log.Debug (ex.ToString ());
+        _log.Trace($"Exception while attempting to send to {ClientIP}");
+        _log.Trace(ex.Message);
+        _log.Trace(ex.ToString ());
 
         return false;
       }
