@@ -59,6 +59,7 @@ namespace WebSocketSharp.Server
     private TimeSpan                              _waitTime;
     private WebsocketStatsManager                 _statsManager;
     private int                                   _websocketPort;
+    private TimeSpan                              _sweepTime = TimeSpan.FromMinutes(1);
 
     #endregion
 
@@ -85,9 +86,8 @@ namespace WebSocketSharp.Server
       _waitTime = TimeSpan.FromSeconds (1);
       _websocketPort = WebSocketServer.getHostPort();
       _statsManager = new WebsocketStatsManager(log, _websocketPort);
-      
 
-      setSweepTimer (TimeSpan.FromMinutes(3).TotalMilliseconds);
+      setSweepTimer();
     }
 
     #endregion
@@ -316,6 +316,21 @@ namespace WebSocketSharp.Server
       }
     }
 
+    /// <summary>
+    /// Set the TimeSpan for how often a sweep should occurr
+    /// </summary>
+    public TimeSpan SweepTime
+    {
+      get
+      {
+        return _sweepTime;
+      }
+      set
+      {
+        _sweepTime = value;
+      }
+    }
+
     #endregion
 
     #region Private Methods
@@ -399,11 +414,10 @@ namespace WebSocketSharp.Server
     {
       DateTime startPingTime = DateTime.UtcNow;
       _log.Info($"Starting to perform broadping for Port {_websocketPort}.");
+
       var ret = new Dictionary<string, bool> ();
 
       foreach (var session in Sessions) {
-        _log.Info($"Preparing to send ping for {session.WebSocket.ClientIP} on Port {_websocketPort}.");
-
         if (_state != ServerState.Start) {
           _log.Info($"Server not started, stop broadping.");
           ret.Clear ();
@@ -412,8 +426,6 @@ namespace WebSocketSharp.Server
         }
 
         var res = session.WebSocket.Ping (rawFrame);
-
-        _log.Info($"Ping result for {session.WebSocket.ClientIP} on Port {_websocketPort} - {res}.");
 
         ret.Add (session.ID, res);
       }
@@ -432,9 +444,9 @@ namespace WebSocketSharp.Server
       return Guid.NewGuid ().ToString ("N");
     }
 
-    private void setSweepTimer (double interval)
+    private void setSweepTimer ()
     {
-      _sweepTimer = new System.Timers.Timer (interval);
+      _sweepTimer = new System.Timers.Timer (_sweepTime.TotalMilliseconds);
       _sweepTimer.Elapsed += (sender, e) => Sweep ();
     }
 
@@ -505,6 +517,8 @@ namespace WebSocketSharp.Server
     internal void Start ()
     {
       lock (_sync) {
+        //Set sweep time to current frequency (may be overridden from default)
+        _sweepTimer.Interval = _sweepTime.TotalMilliseconds;
         _sweepTimer.Enabled = _keepClean;
         _state = ServerState.Start;
       }
@@ -1562,31 +1576,24 @@ namespace WebSocketSharp.Server
         return;
       }
 
-      _log.Trace($"Attempting to lock '_forSweep' on Port {_websocketPort}.");
       lock (_forSweep) {
 
         if (_sweeping) {
           _log.Trace ($"The sweep process for Port {_websocketPort} is still sweeping.");
-
           return;
         }
-
-        _log.Trace($"Setting '_sweeping' variable for Port {_websocketPort}.");
         _sweeping = true;
       }
 
       _log.Trace($"Number of connected sessions on port {_websocketPort} prior to pings - {IDs.Count()}.");
 
       foreach (var id in InactiveIDs) {
-
-        _log.Trace($"Evaluating inactive ID: {id} during sweep.");
         if (_state != ServerState.Start)
         {
           _log.Trace($"Server no longer started on port {_websocketPort}.");
           break;
         }
 
-        _log.Trace($"Acquiring lock for _sync state on port {_websocketPort}.");
         lock (_sync) {
           if (_state != ServerState.Start)
             break;
@@ -1595,15 +1602,13 @@ namespace WebSocketSharp.Server
 
           if (!_sessions.TryGetValue(id, out session))
           {
-            _log.Trace($"Could not find session for specified ID {id}.");
             continue;
           }
 
           var state = session.WebSocket.ReadyState;
 
-          _log.Trace($"Current websocket state for ID {session.ID} - {state}.");
           if (state == WebSocketState.Open) {
-            _log.Trace($"Attempting to close session during sweep for ID {session.ID}.");
+            _log.Trace($"Starting to sweep session: {session.ID}");
             session.WebSocket.Close (CloseStatusCode.Abnormal);
             _log.Trace($"Finished sweeping session: {session.ID}");
             continue;
@@ -1616,7 +1621,6 @@ namespace WebSocketSharp.Server
           }
 
           _sessions.Remove (id);
-          _log.Trace($"Finished removing session ID {session.ID} during sweep.");
         }
       }
 

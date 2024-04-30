@@ -485,6 +485,18 @@ namespace WebSocketSharp.Server
       }
     }
 
+    public TimeSpan SweepTime
+    {
+      get
+      {
+        return _services.SweepTime;
+      }
+      set
+      {
+        _services.SweepTime = value;
+      }
+    }
+
     /// <summary>
     /// Gets or sets the name of the realm associated with the server.
     /// </summary>

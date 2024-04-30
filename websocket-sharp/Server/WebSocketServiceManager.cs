@@ -49,6 +49,7 @@ namespace WebSocketSharp.Server
     private volatile ServerState                     _state;
     private object                                   _sync;
     private TimeSpan                                 _waitTime;
+    private TimeSpan                                 _sweepTime;
 
     #endregion
 
@@ -267,6 +268,45 @@ namespace WebSocketSharp.Server
             host.WaitTime = value;
 
           _waitTime = value;
+        }
+      }
+    }
+
+    /// <summary>
+    /// Gets or sets a value indicating whether the inactive sessions in
+    /// the WebSocket services are cleaned up periodically.
+    /// </summary>
+    /// <remarks>
+    /// The set operation works if the current state of the server is
+    /// Ready or Stop.
+    /// </remarks>
+    /// <value>
+    ///   <para>
+    ///   <c>true</c> if the inactive sessions are cleaned up every 60
+    ///   seconds; otherwise, <c>false</c>.
+    ///   </para>
+    ///   <para>
+    ///   The default value is <c>true</c>.
+    ///   </para>
+    /// </value>
+    public TimeSpan SweepTime
+    {
+      get
+      {
+        return _sweepTime;
+      }
+
+      set
+      {
+        lock (_sync)
+        {
+          if (!canSet())
+            return;
+
+          foreach (var host in _hosts.Values)
+            host.SweepTime = value;
+
+          _sweepTime = value;
         }
       }
     }

@@ -190,6 +190,21 @@ namespace WebSocketSharp.Server
       }
     }
 
+    /// <summary>
+    /// Set the sessions sweep time interval.
+    /// </summary>
+    public TimeSpan SweepTime
+    {
+      get
+      {
+        return _sessions.SweepTime;
+      }
+      set
+      {
+        _sessions.SweepTime = value;
+      }
+    }
+
     #endregion
 
     #region Internal Methods
